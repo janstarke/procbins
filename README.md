@@ -1,6 +1,8 @@
 # procbins
 compresses all process binaries into a zip file
 
+This tool is intended to be used for forensic triage.
+
 ## Usage
 ```
 Usage:
