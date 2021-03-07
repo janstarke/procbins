@@ -4,10 +4,15 @@ use zip::write::FileOptions;
 use zip::result::{ZipError,ZipResult};
 use std::fs::File;
 use std::path::PathBuf;
+use path_slash::PathBufExt;
 use std::io::prelude::*;
 use argparse::{ArgumentParser, Store};
+use regex::Regex;
+use std::borrow::Cow;
+use log::{info, warn, error};
 
 fn main() {
+    colog::init();
     let mut zipfile = String::new();
     {
         let mut ap = ArgumentParser::new();
@@ -20,7 +25,7 @@ fn main() {
     let zipfile = PathBuf::from(zipfile);
     let binaries = get_process_binaries();
     match write_zip(zipfile, &binaries) {
-        Err(why)    => println!("failed: {}", why),
+        Err(why)    => error!("failed: {}", why),
         Ok(_)       => ()
     }
 }
@@ -30,6 +35,12 @@ fn get_process_binaries() -> HashSet<PathBuf> {
     let mut binaries:HashSet<PathBuf> = HashSet::new();
     for (_pid, process) in sys.get_processes() {
         let path = process.exe();
+
+        if ! path.exists() {
+            warn!("process {}({}) refers to invalid program name, omitting...", process.name(), process.pid());
+            continue;
+        }
+
         if ! binaries.contains(path) {
             binaries.insert(path.to_path_buf());
         }
@@ -45,16 +56,32 @@ fn write_zip(zipfile: PathBuf, binaries: &HashSet<PathBuf>) -> ZipResult<()> {
         .compression_method(zip::CompressionMethod::Stored)
         .unix_permissions(0o755);
 
+    let re_drive = Regex::new(r"^(?P<p>[A-Z]):").unwrap();
+
     for p in binaries {
-        let pstr = match p.to_str() {
+        let mut f = match File::open(p) {
+            Ok(f) => f,
+            Err(why) => {
+                error!("error while opening '{}': {}", p.to_str().unwrap(), why);
+                continue;
+            }
+        };
+        let mut buffer = Vec::new();
+        f.read_to_end(&mut buffer)?;
+
+        let pstr = match p.to_slash() {
             Some(v) => v,
             None    => return ZipResult::Err(ZipError::FileNotFound),
         };
-        zip.start_file(pstr, options)?;
-        let mut f = File::open(p)?;
-        let mut buffer = Vec::new();
+        
+        #[cfg(windows)]
+        let pstr = match re_drive.replace_all(&pstr[..], "$p") {
+            Cow::Borrowed(s)    => String::from(s),
+            Cow::Owned(s)     => s,
+        };
 
-        f.read_to_end(&mut buffer)?;
+        info!("adding {}", pstr);
+        zip.start_file(pstr, options)?;
         zip.write_all(&*buffer)?;
     }
     zip.finish()?;
