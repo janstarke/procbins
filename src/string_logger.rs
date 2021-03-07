@@ -3,6 +3,7 @@ use flexi_logger::*;
 use flexi_logger::writers::*;
 use std::{io::Write, ops::DerefMut, usize};
 use std::sync::{Arc, Mutex};
+
 pub struct StringLogger {
     formatter: FormatFunction,
     writer: Mutex<StringLogWriter>,
@@ -29,7 +30,8 @@ impl StringLogWriter {
 
 impl Write for StringLogWriter {
     fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
-        self.messages.lock().unwrap().extend_from_slice(buf);
+        let mut buffer = self.messages.lock().unwrap();
+        buffer.extend_from_slice(buf);
         Ok(buf.len())
     }
     fn flush(&mut self) -> std::io::Result<()> {
@@ -41,7 +43,8 @@ impl LogWriter for StringLogger {
     fn write(&self, now: &mut DeferredNow, record: &Record) -> std::io::Result<()> {
         let mut guard = self.writer.lock().unwrap();
         let writer = guard.deref_mut();
-        (self.formatter)(writer, now, record)
+        (self.formatter)(writer, now, record)?;
+        write!(writer, "\n")
     }
 
     fn flush(&self) -> std::io::Result<()> {

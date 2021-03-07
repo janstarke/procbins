@@ -10,7 +10,7 @@ use path_slash::PathBufExt;
 use std::io::prelude::*;
 use argparse::{ArgumentParser, Store};
 use log::{info, warn, error};
-use flexi_logger::{Logger, detailed_format};
+use flexi_logger::{Logger, LogTarget, Duplicate, detailed_format};
 use string_logger::*;
 use std::sync::{Arc, Mutex};
 
@@ -24,11 +24,11 @@ struct BinaryStatus {
 fn main() {
     let log_buffer: Arc<Mutex<Vec<u8>>> = Arc::new(Mutex::new(Vec::new()));
     let string_logger = StringLogger::new(log_buffer.clone(), detailed_format);
-    Logger::with_env_or_str("info")
-    .print_message()
-    .add_writer("string", Box::new(string_logger))
-    .start()
-    .unwrap_or_else(|e| panic!("Logger initialization failed with {}", e));
+    Logger::with_str("info")
+        .duplicate_to_stderr(Duplicate::Info)
+        .log_target(LogTarget::Writer(Box::new(string_logger)))
+        .start()
+        .unwrap_or_else(|e| panic!("Logger initialization failed with {}", e));
 
     let mut zipfile = String::new();
     {
