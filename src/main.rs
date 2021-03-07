@@ -9,12 +9,13 @@ use std::path::PathBuf;
 use path_slash::PathBufExt;
 use std::io::prelude::*;
 use argparse::{ArgumentParser, Store};
-use regex::Regex;
-use std::borrow::Cow;
 use log::{info, warn, error};
 use flexi_logger::{Logger, detailed_format};
 use string_logger::*;
 use std::sync::{Arc, Mutex};
+
+#[cfg(windows)] use std::borrow::Cow;
+#[cfg(windows)] use regex::Regex;
 
 struct BinaryStatus {
     files: HashSet<PathBuf>
@@ -74,6 +75,7 @@ fn write_zip(zipfile: PathBuf, binaries: &BinaryStatus, log_buffer: Arc<Mutex<Ve
         .compression_method(zip::CompressionMethod::Stored)
         .unix_permissions(0o755);
 
+    #[cfg(windows)]
     let re_drive = Regex::new(r"^(?P<p>[A-Z]):").unwrap();
 
     for p in &binaries.files {
