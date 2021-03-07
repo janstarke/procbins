@@ -11,6 +11,10 @@ use regex::Regex;
 use std::borrow::Cow;
 use log::{info, warn, error};
 
+struct BinaryStatus {
+    files: HashSet<PathBuf>
+}
+
 fn main() {
     colog::init();
     let mut zipfile = String::new();
@@ -30,9 +34,11 @@ fn main() {
     }
 }
 
-fn get_process_binaries() -> HashSet<PathBuf> {
+fn get_process_binaries() -> BinaryStatus {
     let sys = System::new_all();
-    let mut binaries:HashSet<PathBuf> = HashSet::new();
+    let mut binaries = BinaryStatus {
+        files: HashSet::new()
+    };
     for (_pid, process) in sys.get_processes() {
         let path = process.exe();
 
@@ -41,14 +47,14 @@ fn get_process_binaries() -> HashSet<PathBuf> {
             continue;
         }
 
-        if ! binaries.contains(path) {
-            binaries.insert(path.to_path_buf());
+        if ! binaries.files.contains(path) {
+            binaries.files.insert(path.to_path_buf());
         }
     }
     binaries
 }
 
-fn write_zip(zipfile: PathBuf, binaries: &HashSet<PathBuf>) -> ZipResult<()> {
+fn write_zip(zipfile: PathBuf, binaries: &BinaryStatus) -> ZipResult<()> {
     let path = std::path::Path::new(&zipfile);
     let file = std::fs::File::create(&path).unwrap();
     let mut zip = zip::ZipWriter::new(file);
@@ -58,7 +64,7 @@ fn write_zip(zipfile: PathBuf, binaries: &HashSet<PathBuf>) -> ZipResult<()> {
 
     let re_drive = Regex::new(r"^(?P<p>[A-Z]):").unwrap();
 
-    for p in binaries {
+    for p in &binaries.files {
         let mut f = match File::open(p) {
             Ok(f) => f,
             Err(why) => {
