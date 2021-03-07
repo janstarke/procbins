@@ -1,4 +1,6 @@
-use std::collections::HashSet;
+mod string_logger;
+
+use std::{collections::HashSet, ops::Deref};
 use sysinfo::{ProcessExt, System, SystemExt};
 use zip::write::FileOptions;
 use zip::result::{ZipError,ZipResult};
@@ -10,13 +12,23 @@ use argparse::{ArgumentParser, Store};
 use regex::Regex;
 use std::borrow::Cow;
 use log::{info, warn, error};
+use flexi_logger::{Logger, detailed_format};
+use string_logger::*;
+use std::sync::{Arc, Mutex};
 
 struct BinaryStatus {
     files: HashSet<PathBuf>
 }
 
 fn main() {
-    colog::init();
+    let log_buffer: Arc<Mutex<Vec<u8>>> = Arc::new(Mutex::new(Vec::new()));
+    let string_logger = StringLogger::new(log_buffer.clone(), detailed_format);
+    Logger::with_env_or_str("info")
+    .print_message()
+    .add_writer("string", Box::new(string_logger))
+    .start()
+    .unwrap_or_else(|e| panic!("Logger initialization failed with {}", e));
+
     let mut zipfile = String::new();
     {
         let mut ap = ArgumentParser::new();
@@ -28,7 +40,7 @@ fn main() {
     
     let zipfile = PathBuf::from(zipfile);
     let binaries = get_process_binaries();
-    match write_zip(zipfile, &binaries) {
+    match write_zip(zipfile, &binaries, log_buffer.clone()) {
         Err(why)    => error!("failed: {}", why),
         Ok(_)       => ()
     }
@@ -54,7 +66,7 @@ fn get_process_binaries() -> BinaryStatus {
     binaries
 }
 
-fn write_zip(zipfile: PathBuf, binaries: &BinaryStatus) -> ZipResult<()> {
+fn write_zip(zipfile: PathBuf, binaries: &BinaryStatus, log_buffer: Arc<Mutex<Vec<u8>>>) -> ZipResult<()> {
     let path = std::path::Path::new(&zipfile);
     let file = std::fs::File::create(&path).unwrap();
     let mut zip = zip::ZipWriter::new(file);
@@ -90,6 +102,10 @@ fn write_zip(zipfile: PathBuf, binaries: &BinaryStatus) -> ZipResult<()> {
         zip.start_file(pstr, options)?;
         zip.write_all(&*buffer)?;
     }
+
+    zip.start_file("messages.log", options)?;
+    zip.write_all(log_buffer.lock().unwrap().deref())?;
+
     zip.finish()?;
     Result::Ok(())
 }
