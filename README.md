@@ -16,9 +16,16 @@ Positional arguments:
 Optional arguments:
   -h,--help             Show this help message and exit
 ```
+
+## Features
+
+* applies the original folder structure into the zip file, to prevent problems with duplicate file names
+* writes log messages to `messages.log`, which will also be part of the zip file
+* writes SHA1 hashes to `sha1_hashes.csv`, which will also be part of the zip file
+
 ## Download
 
 | OS | Version | Hash |
 |----|---------|-----|
-|[Windows (x64)](https://github.com/teeshop/procbins/releases/download/0.1.0/procbins_0.1.0_x86_64-pc-windows-gnu.zip) | `0.1.0`  | `8fba591653c4bc0270ebbaae82b72b3f098139287ed30939e9e0127094d23e0c` |
-|[Linux (x64)](https://github.com/teeshop/procbins/releases/download/0.1.0/procbins_0.1.0_x86_64-unknown-linux-musl.zip) | `0.1.0`  | `ee5f83cb10baf2f9cddd13866cc229102280aa751ed9a49c0ca5ba93dbcd9c5e` |
+|[Windows (x64)](https://github.com/teeshop/procbins/releases/download/0.4.0/procbins_0.4.0_x86_64-pc-windows-gnu.zip) | `0.4.0`  | `56eab09e1f46408f9b7d7dd357e602cb84335de89e68abf1b856ae089a27e740` |
+|[Linux (x64)](https://github.com/teeshop/procbins/releases/download/0.4.0/procbins_0.4.0_x86_64-unknown-linux-musl.zip) | `0.4.0`  | `20a73d025c013fef185a0117607bdffd1f4f5ee4c99b19be63f998cf302dafd5` |
