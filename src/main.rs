@@ -13,6 +13,8 @@ use log::{info, warn, error};
 use flexi_logger::{Logger, LogTarget, Duplicate, detailed_format};
 use string_logger::*;
 use std::sync::{Arc, Mutex};
+use sha1::{Sha1, Digest};
+use string_builder::Builder;
 
 #[cfg(windows)] use std::borrow::Cow;
 #[cfg(windows)] use regex::Regex;
@@ -74,6 +76,8 @@ fn write_zip(zipfile: PathBuf, binaries: &BinaryStatus, log_buffer: Arc<Mutex<Ve
     let options = FileOptions::default()
         .compression_method(zip::CompressionMethod::Stored)
         .unix_permissions(0o755);
+    
+    let mut sha1_hashes = Builder::default();
 
     #[cfg(windows)]
     let re_drive = Regex::new(r"^(?P<p>[A-Z]):").unwrap();
@@ -88,6 +92,8 @@ fn write_zip(zipfile: PathBuf, binaries: &BinaryStatus, log_buffer: Arc<Mutex<Ve
         };
         let mut buffer = Vec::new();
         f.read_to_end(&mut buffer)?;
+
+        update_sha1_hashes(&mut sha1_hashes, &buffer, &p.to_str().unwrap());
 
         let pstr = match p.to_slash() {
             Some(v) => v,
@@ -108,6 +114,19 @@ fn write_zip(zipfile: PathBuf, binaries: &BinaryStatus, log_buffer: Arc<Mutex<Ve
     zip.start_file("messages.log", options)?;
     zip.write_all(log_buffer.lock().unwrap().deref())?;
 
+    zip.start_file("sha1_hashes.csv", options)?;
+    zip.write_all(sha1_hashes.string().unwrap().as_bytes())?;
+
     zip.finish()?;
     Result::Ok(())
+}
+
+fn update_sha1_hashes(builder: &mut Builder, buffer: impl AsRef<[u8]>, filename: &str) {
+    let mut hasher = Sha1::new();
+    hasher.update(&buffer);
+    let result = hasher.finalize();
+    builder.append(hex::encode(&result[..]));
+    builder.append(";");
+    builder.append(filename);
+    builder.append("\n");
 }
