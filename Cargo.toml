@@ -1,6 +1,6 @@
 [package]
 name = "procbins"
-version = "0.4.0"
+version = "0.4.1"
 authors = ["Jan Starke <Jan.Starke@t-systems.com>"]
 edition = "2018"
 

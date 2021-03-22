@@ -80,7 +80,7 @@ fn write_zip(zipfile: PathBuf, binaries: &BinaryStatus, log_buffer: Arc<Mutex<Ve
     let mut sha1_hashes = Builder::default();
 
     #[cfg(windows)]
-    let re_drive = Regex::new(r"^(?P<p>[A-Z]):").unwrap();
+    let re_drive = Regex::new(r"^(?P<p>[A-Za-z]):").unwrap();
 
     for p in &binaries.files {
         let mut f = match File::open(p) {
