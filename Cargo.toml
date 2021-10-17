@@ -1,21 +1,22 @@
 [package]
 name = "procbins"
-version = "0.4.2"
+version = "0.4.1"
 authors = ["Jan Starke <Jan.Starke@t-systems.com>"]
 edition = "2018"
 description = "compresses all process binaries into a zip file"
 license-file = "LICENSE"
+homepage = "https://github.com/janstarke/procbins"
 
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-sysinfo = "0.20"
+sysinfo = "0.16.4"
 zip = "0.5.11"
 argparse = "0.2.2"
 regex = "1.4.3"
 log = "0.4"
-flexi_logger = "0.19"
+flexi_logger = "0.17.1"
 path-slash = "0.1.4"
 sha-1 = "0.9.4"
 hex = "0.4.3"
