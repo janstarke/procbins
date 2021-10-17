@@ -1,3 +1,5 @@
+![Crates.io](https://img.shields.io/crates/v/procbins)
+
 # procbins
 compresses all process binaries into a zip file
 
